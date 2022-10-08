@@ -17,10 +17,10 @@ class WordsClassifier:
     def __init__(self, file_path: str):
         self.words_dict: dict[str, str] = WordsClassifier.get_words(file_path)
 
-    def run(self):
+    def run(self, *, total_definitions):
         """Run all the project"""
         # Get the tokens definitions list of list
-        tokenize_definitions = self.get_tokenize_definitions(total_definitions=10)
+        tokenize_definitions = self.get_tokenize_definitions(total_definitions=total_definitions)
         # Create the Dictionary Instances
         self.set_dictionary(tokens_definitions=tokenize_definitions)
         # Create the Counter
@@ -28,7 +28,7 @@ class WordsClassifier:
         corpus = self.get_corpus(tokens_definitions=tokenize_definitions)
         self.set_tf_idf_model(corpus=corpus)
         most_common_words = self.get_most_common()
-        tf_idf = self.get_tf_idf(corpus=corpus, target=0)
+        tf_idf = self.get_tf_idf(corpus=corpus)
         return corpus, most_common_words, tf_idf
 
     def set_dictionary(self, tokens_definitions: list[list]):
@@ -36,7 +36,7 @@ class WordsClassifier:
 
         Parameters:
         -----------
-            tokens_definitions: list[list]:
+        tokens_definitions: list[list]:
             This is a list of list that contain the definitions tokenized.
 
         """
@@ -67,7 +67,7 @@ class WordsClassifier:
 
         Parameters:
         -----------
-            tokens_definitions: list[list]:
+        tokens_definitions: list[list]:
             This is a list of list that contain the definitions tokenized.
 
         Returns:
@@ -83,8 +83,20 @@ class WordsClassifier:
         else:
             raise 'Please set the dictionary to use this method.'
 
-    def get_tf_idf(self, corpus: list[list[tuple[int, int]]], target: int):
-        return self.tfidf[corpus[target]]
+    def get_tf_idf(self, corpus: list[list[tuple[int, int]]], target: int = None):
+        """Return the token frequencies by ID.
+
+        corpus: list[list[tuple[int, int]]
+            Is the gensim corpus. Is comprehended by a list of tuples,
+             inside this are the (ID, COUNTER) -> [(12, 3), (13, 1) ...]
+
+        target: int
+            Is the index of the definition.
+
+        """
+        if target:
+            return [self.tfidf[corpus[1]]]
+        return [self.tfidf[tokens] for tokens in corpus]
 
     @staticmethod
     def get_words(file_path: str) -> dict[str, str]:
@@ -92,7 +104,7 @@ class WordsClassifier:
 
         Parameters:
         -----------
-            file_path: str:
+        file_path: str:
             Is the file location system path.
 
         Returns:
@@ -106,13 +118,27 @@ class WordsClassifier:
         """Convert all the values [definitions] to a list of sentences"""
         return list(self.words_dict.values())
 
-    def get_tokenize_definitions(self, *, total_definitions: int = 1000, language: str = 'english') -> list[list]:
-        """Tokenize all the definitions of the [words_dict] attribute."""
+    def get_tokenize_definitions(self, *, total_definitions: int = 5000, language: str = 'english') -> list[list]:
+        """Tokenize all the definitions of the [words_dict] attribute.
+
+        Parameters:
+        -----------
+        total_definitions: int
+            Is the total number of definitions results expected.
+            (Default = 5000)
+        language: str
+            Is the language or idiom of the stop words dictionary. This helps to avoid using
+            not important words.
+            Default( = 'english')
+
+        Returns:
+        list[list]
+        """
         # 1) Extract all the definition list
         words_definition: list = self.get_definition_list()
         # 2) Tokenize the definitions words
         tokenize_definitions: list[list] = [word_tokenize(definition.lower()) for definition in
-                                            words_definition[:total_definitions]]
+                                            words_definition[:total_definitions+1]]
         cleaned_tokenize_definitions = []
         # Clean all the definitions: No number and stopwords (are, the, etc.)
         for definition in tokenize_definitions:
@@ -126,7 +152,7 @@ class WordsClassifier:
 
         Parameters:
         -----------
-            tokens_definitions: list[list]:
+        tokens_definitions: list[list]:
             This is a list of list that contain the definitions tokenized.
 
         """
@@ -137,11 +163,12 @@ class WordsClassifier:
 
         Parameters:
         -----------
-            target: int:
+        target: int:
             Is the index in the list of [counter_definitions] to subscript. By Default is [None] to count the
             most common words in all the tokens of each definition.
             (Default = None)
-            total_results: int:
+
+        total_results: int:
             This is the number of result should return by definition.
             (Default = 10)
 

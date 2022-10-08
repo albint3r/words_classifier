@@ -4,8 +4,10 @@ classifier = WordsClassifier(r'C:\Users\albin\PycharmProjects\sql_hangman_words\
 
 
 def main():
-    result = classifier.run()
-    print(result[1])
+    result = classifier.run(total_definitions=1000)
+    print(result[2])
+    print(len(result[2]))
+    # print(help(classifier))
 
 
 if __name__ == '__main__':
